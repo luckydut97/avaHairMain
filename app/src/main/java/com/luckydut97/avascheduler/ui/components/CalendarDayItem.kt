@@ -28,12 +28,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luckydut97.avascheduler.model.DesignerSchedule
-import com.luckydut97.avascheduler.model.ScheduleTimeSlot
 import java.time.DayOfWeek
 import java.time.LocalDate
 
 /**
- * 달력의 날짜 셀을 표시하는 컴포넌트 - 이름 표시 추가
+ * 달력의 날짜 셀을 표시하는 컴포넌트 - 순번 표시로 개선
  */
 @Composable
 fun CalendarDayItem(
@@ -104,35 +103,22 @@ fun CalendarDayItem(
                 }
             }
 
-            // 스케줄 항목들을 표시 (이름 추가)
+            // 스케줄 항목들을 표시 (순번으로 표시)
             if (schedules.isNotEmpty()) {
-                // 시간별로 그룹화
-                val morningSchedules = schedules.filter { it.timeSlot == ScheduleTimeSlot.MORNING }
-                val afternoonSchedules = schedules.filter { it.timeSlot == ScheduleTimeSlot.AFTERNOON }
-                val allDaySchedules = schedules.filter { it.timeSlot == ScheduleTimeSlot.ALL_DAY }
-
-                // 오전 스케줄 표시
-                if (morningSchedules.isNotEmpty()) {
-                    ScheduleSlot(
-                        title = "오전",
-                        schedules = morningSchedules
-                    )
+                // 순번별로 정렬
+                val sortedSchedules = schedules.sortedBy {
+                    it.note.substringAfter("순번 ").toIntOrNull() ?: Int.MAX_VALUE
                 }
 
-                // 오후 스케줄 표시
-                if (afternoonSchedules.isNotEmpty()) {
-                    ScheduleSlot(
-                        title = "오후",
-                        schedules = afternoonSchedules
-                    )
-                }
-
-                // 종일 스케줄 표시
-                if (allDaySchedules.isNotEmpty()) {
-                    ScheduleSlot(
-                        title = "종일",
-                        schedules = allDaySchedules
-                    )
+                // 각 디자이너 순번 표시
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 2.dp, vertical = 1.dp)
+                ) {
+                    sortedSchedules.forEach { schedule ->
+                        DesignerOrderItem(schedule = schedule)
+                    }
                 }
             }
         }
@@ -140,40 +126,10 @@ fun CalendarDayItem(
 }
 
 /**
- * 각 시간대별 스케줄 표시 컴포넌트
+ * 개별 디자이너 순번 아이템
  */
 @Composable
-private fun ScheduleSlot(
-    title: String,
-    schedules: List<DesignerSchedule>
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 2.dp, vertical = 1.dp)
-    ) {
-        // 시간대 제목 (작은 글씨로)
-        if (schedules.isNotEmpty()) {
-            Text(
-                text = title,
-                fontSize = 7.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(start = 2.dp)
-            )
-        }
-
-        // 스케줄 표시
-        schedules.forEach { schedule ->
-            DesignerScheduleItem(schedule = schedule)
-        }
-    }
-}
-
-/**
- * 개별 디자이너 스케줄 아이템
- */
-@Composable
-private fun DesignerScheduleItem(
+private fun DesignerOrderItem(
     schedule: DesignerSchedule
 ) {
     Row(

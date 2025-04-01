@@ -16,23 +16,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,11 +51,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.luckydut97.avascheduler.model.Designer
+import com.luckydut97.avascheduler.ui.components.DeleteConfirmationDialog
+import com.luckydut97.avascheduler.ui.components.ScheduleGenerationDialog
+import com.luckydut97.avascheduler.ui.components.VacationCalendarDialog
 import com.luckydut97.avascheduler.viewmodel.SchedulerViewModel
-import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 
 /**
@@ -70,62 +66,31 @@ fun DesignerManagementScreen(
     viewModel: SchedulerViewModel,
     modifier: Modifier = Modifier
 ) {
-    // 현재 선택된 월
-    var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
-
-    // 월 포맷터
-    val monthFormatter = remember { DateTimeFormatter.ofPattern("yyyy년 M월", Locale.KOREAN) }
-
     // UI 상태 변수들
     var showAddDesignerDialog by remember { mutableStateOf(false) }
     var showAddInternDialog by remember { mutableStateOf(false) }
     var showVacationDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var showScheduleGenerationDialog by remember { mutableStateOf(false) }
     var selectedDesigner by remember { mutableStateOf<Designer?>(null) }
 
     Column(
         modifier = modifier.fillMaxSize()
     ) {
-        // 상단바 - 월 선택 UI
-        Row(
+        // 직접 상단 헤더 구현 (공백 없음)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(2.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // 이전 월 버튼
-            IconButton(
-                onClick = {
-                    currentYearMonth = currentYearMonth.minusMonths(1)
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowLeft,
-                    contentDescription = "이전 월",
-                    tint = Color.Black
-                )
-            }
-
-            // 현재 월 표시
             Text(
-                text = monthFormatter.format(currentYearMonth),
-                fontSize = 18.sp,
+                text = "직원 관리",
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                textAlign = TextAlign.Center
             )
-
-            // 다음 월 버튼
-            IconButton(
-                onClick = {
-                    currentYearMonth = currentYearMonth.plusMonths(1)
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
-                    contentDescription = "다음 월",
-                    tint = Color.Black
-                )
-            }
         }
 
         // 디자이너/인턴 목록 - 스크롤 가능
@@ -189,7 +154,8 @@ fun DesignerManagementScreen(
                             showVacationDialog = true
                         },
                         onDelete = {
-                            viewModel.deleteDesigner(designer.id)
+                            selectedDesigner = designer
+                            showDeleteConfirmDialog = true
                         }
                     )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -250,7 +216,8 @@ fun DesignerManagementScreen(
                             showVacationDialog = true
                         },
                         onDelete = {
-                            viewModel.deleteDesigner(intern.id)
+                            selectedDesigner = intern
+                            showDeleteConfirmDialog = true
                         }
                     )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -261,6 +228,28 @@ fun DesignerManagementScreen(
             item {
                 Spacer(modifier = Modifier.height(80.dp))
             }
+        }
+
+        // 스케줄 생성 버튼
+        ElevatedButton(
+            onClick = {
+                showScheduleGenerationDialog = true
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Schedule,
+                contentDescription = "스케줄 생성",
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "스케줄 자동 생성",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 
@@ -294,7 +283,7 @@ fun DesignerManagementScreen(
     if (showVacationDialog && selectedDesigner != null) {
         VacationCalendarDialog(
             designer = selectedDesigner!!,
-            yearMonth = currentYearMonth,
+            yearMonth = YearMonth.now(), // 현재 월 사용
             onConfirm = { dates ->
                 viewModel.setVacationDates(selectedDesigner!!, dates)
                 showVacationDialog = false
@@ -306,10 +295,39 @@ fun DesignerManagementScreen(
             }
         )
     }
+
+    // 삭제 확인 대화상자
+    if (showDeleteConfirmDialog && selectedDesigner != null) {
+        DeleteConfirmationDialog(
+            designer = selectedDesigner!!,
+            onConfirm = {
+                viewModel.deleteDesigner(selectedDesigner!!.id)
+                showDeleteConfirmDialog = false
+                selectedDesigner = null
+            },
+            onDismiss = {
+                showDeleteConfirmDialog = false
+                selectedDesigner = null
+            }
+        )
+    }
+
+    // 스케줄 생성 확인 대화상자
+    if (showScheduleGenerationDialog) {
+        ScheduleGenerationDialog(
+            onConfirm = {
+                viewModel.generateSchedules()
+                showScheduleGenerationDialog = false
+            },
+            onDismiss = {
+                showScheduleGenerationDialog = false
+            }
+        )
+    }
 }
 
 /**
- * 디자이너/인턴 아이템 컴포넌트
+ * 디자이너/인턴 아이템 컴포넌트 - 삭제 기능 포함
  */
 @Composable
 fun DesignerItem(
@@ -513,72 +531,4 @@ fun AddPersonDialog(
             }
         }
     }
-}
-
-/**
- * 휴무 설정용 캘린더 다이얼로그
- */
-@Composable
-fun VacationCalendarDialog(
-    designer: Designer,
-    yearMonth: YearMonth,
-    onConfirm: (List<LocalDate>) -> Unit,
-    onDismiss: () -> Unit
-) {
-    // 휴무 설정을 위한 캘린더 다이얼로그 구현
-    // 실제 구현에서는 달력 그리드를 표시하고 날짜를 다중 선택할 수 있도록 함
-
-    // 선택된 휴무일 목록 (상태 관리)
-    var selectedDates by remember { mutableStateOf(emptyList<LocalDate>()) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = "${designer.name} 휴무 설정",
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column {
-                Text(
-                    text = "휴무일로 설정할 날짜를 선택하세요.",
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                // 여기에 미니 캘린더 표시 (실제 구현 시 추가)
-                Text(
-                    text = "캘린더 구현 예정...",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .border(1.dp, Color.LightGray, RoundedCornerShape(4.dp))
-                        .padding(16.dp),
-                    textAlign = TextAlign.Center
-                )
-
-                // 선택된 날짜 표시
-                if (selectedDates.isNotEmpty()) {
-                    Text(
-                        text = "선택된 휴무일: ${selectedDates.size}일",
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(selectedDates) }
-            ) {
-                Text("확인")
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss
-            ) {
-                Text("취소")
-            }
-        }
-    )
 }

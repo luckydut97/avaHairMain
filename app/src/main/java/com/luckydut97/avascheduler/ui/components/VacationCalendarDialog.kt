@@ -136,7 +136,7 @@ fun VacationCalendarDialog(
                 VacationCalendarGrid(
                     yearMonth = currentYearMonth,
                     selectedDates = selectedDates,
-                    designer = designer, // designer 매개변수 전달
+                    designer = designer,
                     onDateSelected = { date ->
                         selectedDates = if (selectedDates.contains(date)) {
                             selectedDates - date
@@ -242,14 +242,14 @@ private fun WeekDayHeader() {
 }
 
 /**
- * 휴무일 선택 캘린더 그리드
+ * 휴무일 선택 캘린더 그리드 - OOM 오류 수정
  */
 @Composable
 private fun VacationCalendarGrid(
     yearMonth: YearMonth,
     selectedDates: List<LocalDate>,
-    onDateSelected: (LocalDate) -> Unit,
-    designer: Designer // designer 매개변수 추가
+    designer: Designer,
+    onDateSelected: (LocalDate) -> Unit
 ) {
     // 해당 월의 첫 날과 마지막 날
     val firstDayOfMonth = yearMonth.atDay(1)
@@ -258,14 +258,22 @@ private fun VacationCalendarGrid(
     // 캘린더 시작일 (해당 월 첫날의 주의 일요일)
     val firstDayOfCalendar = firstDayOfMonth.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
 
-    // 주 단위로 날짜 계산
+    // 캘린더 종료일 (해당 월 마지막날이 포함된 주의 토요일)
+    val lastDayOfCalendar = lastDayOfMonth.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY))
+
+    // 주 단위로 날짜 계산 - 무한 루프 방지를 위한 안전장치 추가
     val weeks = mutableListOf<List<LocalDate>>()
     var currentDay = firstDayOfCalendar
 
-    while (currentDay.isBefore(lastDayOfMonth) || currentDay.equals(lastDayOfMonth) || currentDay.dayOfWeek != DayOfWeek.SATURDAY) {
+    // 최대 6주까지만 표시 (일반적인 달력 표시 범위)
+    val maxWeeks = 6
+    var weekCount = 0
+
+    while (!currentDay.isAfter(lastDayOfCalendar) && weekCount < maxWeeks) {
         val week = (0..6).map { currentDay.plusDays(it.toLong()) }
         weeks.add(week)
         currentDay = currentDay.plusWeeks(1)
+        weekCount++
     }
 
     // 오늘 날짜

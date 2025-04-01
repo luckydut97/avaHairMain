@@ -28,6 +28,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val viewModel: SchedulerViewModel = viewModel()
+                    // 앱 컨텍스트로 ViewModel 초기화
+                    viewModel.initialize(applicationContext)
+
                     SchedulerScreen(viewModel = viewModel)
                 }
             }

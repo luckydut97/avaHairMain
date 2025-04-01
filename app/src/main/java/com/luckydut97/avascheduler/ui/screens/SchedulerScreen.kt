@@ -20,10 +20,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luckydut97.avascheduler.ui.components.CalendarComponent
 import com.luckydut97.avascheduler.ui.components.TabBarComponent
-import com.luckydut97.avascheduler.ui.components.VacationCalendarDialog
 import com.luckydut97.avascheduler.ui.theme.GradientEnd
 import com.luckydut97.avascheduler.ui.theme.GradientStart
 import com.luckydut97.avascheduler.viewmodel.SchedulerViewModel
@@ -158,12 +164,24 @@ fun SchedulerScreen(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // 우측 더미 공간
-                    Box(modifier = Modifier.size(36.dp))
+                    // 우측 스케줄 생성 버튼 (필요시 표시)
+                    if (viewModel.needScheduleGeneration) {
+                        IconButton(
+                            onClick = { viewModel.generateSchedules() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "스케줄 생성",
+                                tint = Color.Red, // 빨간색으로 강조
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    } else {
+                        // 공간 유지를 위한 투명 영역
+                        Box(modifier = Modifier.size(36.dp))
+                    }
                 }
-            } else {
-                // 디자이너 관리 탭은 DesignerManagementScreen에서 자체적으로 상단 UI 처리
-                Box(modifier = Modifier.height(44.dp)) // 캘린더 탭과 높이 맞추기
             }
 
             Spacer(modifier = Modifier.height(8.dp)) // 간격 줄임
@@ -177,13 +195,39 @@ fun SchedulerScreen(
             ) {
                 if (viewModel.selectedTabIndex == 0) {
                     // 캘린더 탭
-                    CalendarComponent(
-                        calendarState = viewModel.calendarState,
-                        schedules = schedulesByDate,
-                        onDateClick = { viewModel.selectDate(it) },
-                        modifier = Modifier.fillMaxSize(),
-                        cellHeightFactor = 1.3f // 셀 높이 증가 - 마지막 주가 잘리지 않도록
-                    )
+                    Column {
+                        // 스케줄 생성 필요 알림 (필요시 표시)
+                        if (viewModel.needScheduleGeneration) {
+                            Snackbar(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                action = {
+                                    TextButton(onClick = { viewModel.generateSchedules() }) {
+                                        Text("생성하기", color = Color.White)
+                                    }
+                                }
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Warning,
+                                        contentDescription = "경고",
+                                        tint = Color.Yellow,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("스케줄 생성이 필요합니다")
+                                }
+                            }
+                        }
+
+                        // 캘린더 컴포넌트
+                        CalendarComponent(
+                            calendarState = viewModel.calendarState,
+                            schedules = schedulesByDate,
+                            onDateClick = { viewModel.selectDate(it) },
+                            modifier = Modifier.fillMaxSize(),
+                            cellHeightFactor = 1.3f // 셀 높이 증가 - 마지막 주가 잘리지 않도록
+                        )
+                    }
                 } else {
                     // 디자이너 관리 탭
                     DesignerManagementScreen(
