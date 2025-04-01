@@ -20,6 +20,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.util.UUID
 
+
 class SchedulerViewModel : ViewModel() {
     // 달력 상태
     var calendarState by mutableStateOf(CalendarState())
@@ -213,5 +214,29 @@ class SchedulerViewModel : ViewModel() {
         }
 
         schedules = schedulesMap
+    }
+
+    /**
+     * 디자이너 삭제
+     */
+    fun deleteDesigner(designerId: String) {
+        // 디자이너 목록에서 삭제
+        designers = designers.filter { it.id != designerId }
+
+        // 스케줄에서도 해당 디자이너의 모든 일정 삭제
+        val updatedSchedules = schedules.toMutableMap()
+
+        for ((date, dailySchedule) in updatedSchedules) {
+            val updatedDesignerSchedules = dailySchedule.designerSchedules.filter {
+                it.designer.id != designerId
+            }
+
+            updatedSchedules[date] = dailySchedule.copy(designerSchedules = updatedDesignerSchedules)
+        }
+
+        schedules = updatedSchedules
+
+        // 휴무일 설정에서도 삭제
+        vacationDates = vacationDates.filterKeys { it != designerId }
     }
 }

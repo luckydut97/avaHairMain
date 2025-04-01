@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
@@ -59,6 +60,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
 
 /**
  * 개선된 디자이너 관리 화면
@@ -185,6 +187,9 @@ fun DesignerManagementScreen(
                         onToggleAvailability = {
                             selectedDesigner = designer
                             showVacationDialog = true
+                        },
+                        onDelete = {
+                            viewModel.deleteDesigner(designer.id)
                         }
                     )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -243,6 +248,9 @@ fun DesignerManagementScreen(
                         onToggleAvailability = {
                             selectedDesigner = intern
                             showVacationDialog = true
+                        },
+                        onDelete = {
+                            viewModel.deleteDesigner(intern.id)
                         }
                     )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -306,7 +314,8 @@ fun DesignerManagementScreen(
 @Composable
 fun DesignerItem(
     designer: Designer,
-    onToggleAvailability: () -> Unit
+    onToggleAvailability: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -336,9 +345,22 @@ fun DesignerItem(
         // 휴무 설정 버튼
         Button(
             onClick = onToggleAvailability,
-            modifier = Modifier.padding(start = 8.dp)
+            modifier = Modifier.padding(horizontal = 8.dp)
         ) {
             Text("휴무 설정")
+        }
+
+        // 삭제 버튼
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "삭제",
+                tint = Color.Red,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
