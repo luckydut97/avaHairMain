@@ -21,10 +21,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
@@ -32,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -82,7 +85,7 @@ fun DesignerManagementScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(2.dp),
+                .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -105,27 +108,25 @@ fun DesignerManagementScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "디자이너",
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
 
-                    // 디자이너 추가 버튼
+                    // 디자이너 추가 버튼 - 세련된 아이콘 버튼으로 변경
                     IconButton(
                         onClick = { showAddDesignerDialog = true },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "디자이너 추가",
-                            tint = Color.White
+                            tint = Color.Black
                         )
                     }
                 }
@@ -147,18 +148,28 @@ fun DesignerManagementScreen(
                 }
             } else {
                 items(designerList) { designer ->
-                    DesignerItem(
-                        designer = designer,
-                        onToggleAvailability = {
-                            selectedDesigner = designer
-                            showVacationDialog = true
-                        },
-                        onDelete = {
-                            selectedDesigner = designer
-                            showDeleteConfirmDialog = true
-                        }
-                    )
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        DesignerItem(
+                            designer = designer,
+                            onToggleAvailability = {
+                                selectedDesigner = designer
+                                showVacationDialog = true
+                            },
+                            onDelete = {
+                                selectedDesigner = designer
+                                showDeleteConfirmDialog = true
+                            }
+                        )
+                    }
                 }
             }
 
@@ -167,27 +178,25 @@ fun DesignerManagementScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "인턴",
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f)
                     )
 
-                    // 인턴 추가 버튼
+                    // 인턴 추가 버튼 - 세련된 아이콘 버튼으로 변경
                     IconButton(
                         onClick = { showAddInternDialog = true },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.secondary, CircleShape)
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "인턴 추가",
-                            tint = Color.White
+                            tint = Color.Black
                         )
                     }
                 }
@@ -209,18 +218,28 @@ fun DesignerManagementScreen(
                 }
             } else {
                 items(internList) { intern ->
-                    DesignerItem(
-                        designer = intern,
-                        onToggleAvailability = {
-                            selectedDesigner = intern
-                            showVacationDialog = true
-                        },
-                        onDelete = {
-                            selectedDesigner = intern
-                            showDeleteConfirmDialog = true
-                        }
-                    )
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        )
+                    ) {
+                        DesignerItem(
+                            designer = intern,
+                            onToggleAvailability = {
+                                selectedDesigner = intern
+                                showVacationDialog = true
+                            },
+                            onDelete = {
+                                selectedDesigner = intern
+                                showDeleteConfirmDialog = true
+                            }
+                        )
+                    }
                 }
             }
 
@@ -237,12 +256,13 @@ fun DesignerManagementScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(8.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Schedule,
                 contentDescription = "스케줄 생성",
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -327,7 +347,7 @@ fun DesignerManagementScreen(
 }
 
 /**
- * 디자이너/인턴 아이템 컴포넌트 - 삭제 기능 포함
+ * 디자이너/인턴 아이템 컴포넌트 - 더 짧고 현대적인 UI
  */
 @Composable
 fun DesignerItem(
@@ -338,46 +358,50 @@ fun DesignerItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 디자이너 색상 표시
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .size(24.dp)
                 .clip(CircleShape)
                 .background(designer.color)
-                .border(1.dp, Color.LightGray, CircleShape)
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         // 디자이너 이름
         Text(
             text = designer.name,
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.weight(1f)
         )
 
-        // 휴무 설정 버튼
-        Button(
+        // 휴무 설정 버튼 - 아이콘만 사용
+        IconButton(
             onClick = onToggleAvailability,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            modifier = Modifier.size(36.dp)
         ) {
-            Text("휴무 설정")
+            Icon(
+                imageVector = Icons.Default.CalendarMonth,
+                contentDescription = "휴무 설정",
+                tint = Color.Black,
+                modifier = Modifier.size(20.dp)
+            )
         }
 
         // 삭제 버튼
         IconButton(
             onClick = onDelete,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(36.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Delete,
                 contentDescription = "삭제",
                 tint = Color.Red,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }
