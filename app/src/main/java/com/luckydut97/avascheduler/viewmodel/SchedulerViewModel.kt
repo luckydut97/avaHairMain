@@ -266,11 +266,11 @@ class SchedulerViewModel : ViewModel() {
             val designerSchedules = mutableListOf<DesignerSchedule>()
 
             if (availableDesigners.isNotEmpty()) {
-                // 공평하게 순번 배정
-                val sortedDesigners = assignDesignerOrders(availableDesigners, monthlyOrderCounts)
+                // 각 순번별로 가장 적합한 디자이너 선택
+                val designerAssignments = findFairestDesignerAssignment(availableDesigners, monthlyOrderCounts)
 
-                // 각 디자이너의 순번 카운트 증가
-                sortedDesigners.forEachIndexed { index, designer ->
+                // 각 디자이너를 선택된 순번으로 배치
+                designerAssignments.forEachIndexed { order, designer ->
                     // 스케줄에 추가 - 시간대 개념 없이 순번만 표시
                     designerSchedules.add(
                         DesignerSchedule(
@@ -278,17 +278,17 @@ class SchedulerViewModel : ViewModel() {
                             date = currentDate,
                             timeSlot = ScheduleTimeSlot.ALL_DAY, // 시간대 개념은 없지만 필드는 유지
                             isAvailable = true,
-                            note = "순번 ${index + 1}" // 순번 정보
+                            note = "순번 ${order + 1}" // 순번 정보
                         )
                     )
 
                     // 해당 순번 카운트 증가
                     designerOrderCounts[designer.id]?.let { counts ->
-                        counts[index] = (counts[index] ?: 0) + 1
+                        counts[order] = (counts[order] ?: 0) + 1
                     }
 
                     monthlyOrderCounts[designer.id]?.let { counts ->
-                        counts[index] = (counts[index] ?: 0) + 1
+                        counts[order] = (counts[order] ?: 0) + 1
                     }
                 }
             }
@@ -314,109 +314,48 @@ class SchedulerViewModel : ViewModel() {
     }
 
     /**
-     * 디자이너들의 순번 공평하게 배정
+     * 각 순번별로 가장 공평하게 디자이너 배치
      */
-    private fun assignDesignerOrders(
+    private fun findFairestDesignerAssignment(
         availableDesigners: List<Designer>,
         monthlyCounts: Map<String, MutableMap<Int, Int>>
     ): List<Designer> {
-        // 모든 가능한 배치 순서 생성
-        val allPossibleOrders = generateAllPossibleOrders(availableDesigners.size)
+        val numPositions = availableDesigners.size
+        val result = mutableListOf<Designer>()
+        val assignedDesigners = mutableSetOf<String>()
 
-        // 가장 공평한 순서 찾기
-        var bestOrder = allPossibleOrders.first()
-        var minStandardDeviation = Double.MAX_VALUE
+        // 각 순번에 대해 가장 적합한 디자이너 선택
+        for (position in 0 until numPositions) {
+            var bestDesigner: Designer? = null
+            var lowestCount = Int.MAX_VALUE
+            var lowestTotalCount = Int.MAX_VALUE
 
-        for (order in allPossibleOrders) {
-            val stdDev = calculateStandardDeviation(availableDesigners, order, monthlyCounts)
+            // 아직 배치되지 않은 디자이너 중에서 해당 순번에 가장 적게 배치된 디자이너 선택
+            for (designer in availableDesigners) {
+                if (designer.id in assignedDesigners) continue
 
-            if (stdDev < minStandardDeviation) {
-                minStandardDeviation = stdDev
-                bestOrder = order
+                // 이번 달 해당 순번 배치 횟수
+                val monthlyCount = monthlyCounts[designer.id]?.get(position) ?: 0
+
+                // 누적 해당 순번 배치 횟수
+                val totalCount = designerOrderCounts[designer.id]?.get(position) ?: 0
+
+                // 이번 달 카운트가 가장 적은 디자이너 우선, 같으면 누적 카운트가 적은 디자이너 우선
+                if (monthlyCount < lowestCount ||
+                    (monthlyCount == lowestCount && totalCount < lowestTotalCount)) {
+                    lowestCount = monthlyCount
+                    lowestTotalCount = totalCount
+                    bestDesigner = designer
+                }
+            }
+
+            bestDesigner?.let {
+                result.add(it)
+                assignedDesigners.add(it.id)
             }
         }
 
-        // 실제 디자이너 리스트에 순서 적용
-        return bestOrder.map { index -> availableDesigners[index] }
-    }
-
-    /**
-     * n명에 대한 모든 가능한 순서 조합 생성 (첫 5개만)
-     */
-    private fun generateAllPossibleOrders(n: Int): List<List<Int>> {
-        val orders = mutableListOf<List<Int>>()
-
-        // n이 작을 경우 모든 순열 생성 (최대 6명까지)
-        if (n <= 6) {
-            generatePermutations(IntArray(n) { it }, 0, orders)
-        } else {
-            // n이 크면 적절한 샘플만 생성
-            val baseOrder = List(n) { it }
-            orders.add(baseOrder)
-
-            // 몇 가지 변형 추가
-            for (i in 0 until minOf(20, n)) {
-                val shuffled = baseOrder.shuffled()
-                orders.add(shuffled)
-            }
-        }
-
-        return orders.take(30) // 최대 30개 조합으로 제한 (성능 이슈 방지)
-    }
-
-    /**
-     * 순열 생성 헬퍼 함수
-     */
-    private fun generatePermutations(arr: IntArray, start: Int, result: MutableList<List<Int>>) {
-        if (start == arr.size) {
-            result.add(arr.toList())
-            return
-        }
-
-        for (i in start until arr.size) {
-            // 자리 교환
-            val temp = arr[start]
-            arr[start] = arr[i]
-            arr[i] = temp
-
-            // 재귀 호출
-            generatePermutations(arr, start + 1, result)
-
-            // 원상복구
-            arr[i] = arr[start]
-            arr[start] = temp
-        }
-    }
-
-    /**
-     * 특정 배치 순서의 공평성 계산 (표준편차 이용)
-     */
-    private fun calculateStandardDeviation(
-        designers: List<Designer>,
-        orderIndices: List<Int>,
-        monthlyCounts: Map<String, MutableMap<Int, Int>>
-    ): Double {
-        val values = mutableListOf<Int>()
-
-        orderIndices.forEachIndexed { i, designerIndex ->
-            val designer = designers[designerIndex]
-
-            // 이번 달에 해당 순번으로 배치된 횟수
-            val monthlyCount = monthlyCounts[designer.id]?.get(i) ?: 0
-
-            // 누적 횟수
-            val totalCount = designerOrderCounts[designer.id]?.get(i) ?: 0
-
-            // 가중치를 두어 이번 달 카운트가 더 중요하게 처리
-            values.add(monthlyCount * a + totalCount)
-        }
-
-        // 평균 계산
-        val mean = values.average()
-
-        // 표준편차 계산
-        val sumSquaredDiffs = values.sumOf { (it - mean) * (it - mean) }
-        return kotlin.math.sqrt(sumSquaredDiffs / values.size)
+        return result
     }
 
     /**
@@ -424,6 +363,19 @@ class SchedulerViewModel : ViewModel() {
      */
     private fun isDesignerOnVacation(designerId: String, date: LocalDate): Boolean {
         return vacationDates[designerId]?.contains(date) ?: false
+    }
+
+    /**
+     * 현재 순번 카운트 출력 (디버깅용)
+     */
+    fun printOrderCounts() {
+        println("===== 디자이너별 순번 카운트 =====")
+        designers.forEach { designer ->
+            println("${designer.name}:")
+            designerOrderCounts[designer.id]?.forEach { (order, count) ->
+                println("  순번 ${order + 1}: $count 회")
+            }
+        }
     }
 
     /**
@@ -576,7 +528,7 @@ class SchedulerViewModel : ViewModel() {
     }
 
     companion object {
-        // 이번 달 순번과 누적 순번 간의 가중치 (이번 달이 3배 더 중요)
+        // 이번 달 순번과 누적 순번 간의 가중치
         private const val a = 3
     }
 }
